@@ -1,0 +1,173 @@
+!=================== Start of Script ===================
+
+! Clear previous settings
+CANCEL DATA/ALL
+CANCEL WINDOW/ALL
+SET WINDOW/NEW
+
+! Adjust the axis size for better visualization
+PPL AXLSZE 0.20, 0.20
+
+! Set the aspect ratio and increase window size
+SET MEMORY/SIZE=2000
+
+
+
+
+
+
+!!! =============== Reference data SIS ===========================================
+use SIS_merged_2019_08_01_to_2019_08_11_regridded.nc !d=1
+
+
+!!! ====================  WRF model data =============================================
+
+use merged_SWDOWN_daymean_2019-08_Kessler_scheme_1.nc   !d=1
+use merged_SWDOWN_daymean_2019-08_Ferrier_5.nc         !d=2
+use merged_SWDOWN_daymean_2019-08_Thompson_scheme_8.nc  !d=4
+
+
+let SIS_REF = SIS[d=1,l=2:11@ave]
+
+
+let Ferrier = SWDOWN[d=2,l=10,GX=SIS_REF,GY=SIS_REF,GT=SIS_REF@asn]
+let Thompson = SWDOWN[d=3,l=2:11@ave,GX=SIS_REF,GY=SIS_REF,GT=SIS_REF@asn]
+let Kessler = SWDOWN[d=4,l=2:11@ave,GX=SIS_REF,GY=SIS_REF,GT=SIS_REF@asn]
+
+let bias_Ferrier = Ferrier - SIS_REF
+let bias_Thompson = Thompson - SIS_REF
+let bias_Kessler = Kessler - SIS_REF
+
+
+
+
+let   npy = 3
+let   npx = 3
+! go multi_view [rows],[columns], [xsize],[xstart],[xgap], [ysize],[ystart],[ygap],[prefix] 
+  go multi_view `npy`,  `npx`,       0.21,   0.08,   0.065,     0.21,    0.22,   0.05      
+  SET WINDOW/ASPECT = 0.7/size=2
+
+
+let rlonD_start =  -21.07
+let rlonD_stop  =   17.2
+let rlatD_start =   0.5
+let rlatD_stop  =    23.2
+!  PPL AXLSZE 0.16,0.16
+
+!==============Plotting ====================================================
+SET VIEW V11
+PPL AXLSZE 0.12,0.12
+PPL AXLABP 0,-1
+fill/nolab/pal=cmocean_solar/nokey/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2/lev=(20,350,20)(inf) SIS_REF; go land 1 "" 1
+
+label -20 2 -1 0 0.18 @AS  (a)
+label -10 25.5 -1 0  0.20 @P7 SIS REFERENCE
+!label -27 5 -1 90 0.1 @P7 Tas_MIN
+
+
+SET VIEW V12
+PPL AXLABP 0,0
+fill/nolab/pal=cmocean_solar/lev=(20,350,20)(inf)/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2 Ferrier; go land 1 "" 1
+label -10 25.5 -1 0  0.20 @P7 Ferrier mp=5
+label/nouser -0.8 0.8  0 90  0.15 @P7 Solar Radiation  
+
+!========================= go regression ======================
+go regressxy.jnl 
+  let p = SIS_REF
+  let q = Ferrier
+
+!=====================================================
+
+label -0.4  1 -1 0 .10 @P1 r=`corr, precision=2`
+label -10.5  1 -1 0 .10 @P1 RMSE=`RMSE, precision=2`
+label -20  1 -1 0 .10 @P1 MAE=`MAE, precision=2`
+
+SET VIEW V13
+! go multi_view [rows],[columns], [xsize],[xstart],[xgap], [ysize],[ystart],[ygap],[prefix] 
+go multi_view     1,       1,      0.21,   0.65,   0.035,     0.21,    0.74,   0.03, AA
+
+SET VIEW AA11
+PPL AXLABP 0,0
+
+fill/nolab/pal=orange_purple/lev=(-inf)(-20,20,4)(inf)/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2 bias_Ferrier; go land 1 "" 1
+label -10 25.5 -1 0  0.20 @P7 Bias Ferrier
+
+
+!SET VIEW V21
+
+!PPL AXLSZE 0.12,0.12
+!PPL AXLABP 0,-1
+!fill/nolab/pal=cmocean_solar/nokey/lev=(20,350,20)(inf)/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2 SIS_REF; go land 1 "" 1
+!label/nouser -0.8 0.8  0 90  0.15 @P7 Thompson mp=8
+
+SET VIEW V22
+
+PPL AXLABP 0,0
+fill/nolab/pal=cmocean_solar/lev=(20,350,20)(inf)/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2 Thompson; go land 1 "" 1
+!label/nouser -0.8 0.8  0 90  0.15 @P7 Thompson mp=8
+!LABEL -5, 25, -1, 0, 0.22 @P7 Thompson
+label -10 25.5 -1 0  0.20 @P7 Thompson mp=8
+! ================== RMSE =========================
+go regressxy
+  let p = SIS_REF
+  let q = Thompson
+
+!===============================================
+
+label -0.4  1 -1 0 .10 @P1 r=`corr, precision=2`
+label -10.5  1 -1 0 .10 @P1 RMSE=`RMSE, precision=2`
+label -20  1 -1 0 .10 @P1 MAE=`MAE, precision=2`
+
+
+
+SET VIEW V23
+! go multi_view [rows],[columns], [xsize],[xstart],[xgap], [ysize],[ystart],[ygap],[prefix] 
+go multi_view     1,       1,      0.21,   0.65,   0.035,     0.21,    0.48,   0.03, BB
+
+SET VIEW BB11
+PPL AXLABP 0,0
+
+fill/nolab/pal=orange_purple/lev=(-inf)(-20,20,4)(inf)/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2 bias_Thompson; go land 1 "" 1
+label -10 25.5 -1 0  0.20 @P7 Bias Thompson
+
+
+!========================================= Kessler====================================================
+
+
+!SET VIEW V31
+
+!PPL AXLSZE 0.12,0.12
+!PPL AXLABP -1,-1
+!fill/nolab/pal=cmocean_solar/nokey/lev=(20,350,20)(inf)/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2 SIS_REF; go land 1 "" 1
+!label/nouser -0.8 0.8  0 90  0.15 @P7 Kessler mp=1
+
+SET VIEW V32
+
+PPL AXLABP -1,0
+fill/nolab/pal=cmocean_solar/lev=(20,350,20)(inf)/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2 Kessler; go land 1 "" 1
+!label/nouser -0.8 0.8  0 90  0.15 @P7 Kessler mp=1
+label -10 25.5 -1 0  0.20 @P7 Kessler mp=1
+! ================== RMSE =========================
+go regressxy
+  let p = SIS_REF
+  let q = Kessler
+
+!===============================================
+
+label -0.4  1 -1 0 .10 @P1 r=`corr, precision=2`
+label -10.5  1 -1 0 .10 @P1 RMSE=`RMSE, precision=2`
+label -20  1 -1 0 .10 @P1 MAE=`MAE, precision=2`
+
+
+
+SET VIEW V33
+! go multi_view [rows],[columns], [xsize],[xstart],[xgap], [ysize],[ystart],[ygap],[prefix] 
+go multi_view     1,       1,      0.21,   0.65,   0.035,     0.21,    0.22,   0.03, CC
+
+SET VIEW CC11
+PPL AXLABP -1,0
+
+fill/nolab/pal=orange_purple/lev=(-inf)(-20,20,4)(inf)/xlimit=`rlonD_start`:`rlonD_stop`:4/ylim = `rlatD_start`:`rlatD_stop`:2 bias_Kessler; go land 1 "" 1
+label -10 25.5 -1 0  0.20 @P7 Bias Kessler
+
+

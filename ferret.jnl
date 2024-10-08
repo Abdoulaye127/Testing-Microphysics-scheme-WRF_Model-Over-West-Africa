@@ -1,0 +1,10 @@
+ ! NOAA/PMEL TMAP
+ ! FERRET v7.6 (optimized)
+ ! Linux 3.10.0-1127.10.1.el7.x86_64 64-bit - 06/25/20
+ !  5-Oct-24 23:13     
+
+go DTP_Plot.jnl 3
+go DTP_Plot.jnl 2
+go DTP_Plot.jnl 3
+go DTP_Plot.jnl 5
+q
